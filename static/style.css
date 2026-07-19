@@ -640,10 +640,17 @@ a {
 }
 
 @media (max-width: 680px) {
+  /* Stack the two pages; each sizes to its own content (no forced 50/50). */
   .book {
     flex-direction: column;
     max-width: 440px;
     max-height: none;
+    animation: none;
+  }
+
+  .page {
+    flex: none;
+    width: 100%;
   }
 
   .page-left,
@@ -654,6 +661,17 @@ a {
 
   .page-inner {
     padding: 30px 26px;
+    height: auto;
     overflow-y: visible;
+  }
+
+  /* On phones, skip the 3D cover flip + entrance animations — show it flat. */
+  .book-cover {
+    display: none;
+  }
+
+  .page-inner > * {
+    opacity: 1;
+    animation: none;
   }
 }

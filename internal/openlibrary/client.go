@@ -7,10 +7,33 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// Open Library descriptions often contain markdown links, HTML tags, backslash
+// line-breaks, and a trailing "----------" source note. These clean that up.
+var (
+	htmlTagRe   = regexp.MustCompile(`<[^>]+>`)
+	mdLinkRe    = regexp.MustCompile(`\[([^\]]+)\]\([^)]*\)`)
+	trailingRe  = regexp.MustCompile(`(?s)\n\s*-{4,}.*$`)
+	bareSlashRe = regexp.MustCompile(`(?m)^\s*\\+\s*$`)
+	blankLineRe = regexp.MustCompile(`\n{3,}`)
+)
+
+func cleanDescription(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")     // normalize CRLF first
+	s = strings.ReplaceAll(s, "\r", "\n")
+	s = trailingRe.ReplaceAllString(s, "")     // drop trailing "---- source ..." note
+	s = mdLinkRe.ReplaceAllString(s, "$1")      // [text](url) -> text
+	s = htmlTagRe.ReplaceAllString(s, "")       // strip <u> etc.
+	s = strings.ReplaceAll(s, "\\\n", "\n")     // backslash line-continuations
+	s = bareSlashRe.ReplaceAllString(s, "")     // lone "\" lines
+	s = blankLineRe.ReplaceAllString(s, "\n\n") // collapse extra blank lines
+	return strings.TrimSpace(s)
+}
 
 const (
 	searchURL   = "https://openlibrary.org/search.json"
@@ -185,7 +208,7 @@ func Work(ctx context.Context, id string) (Detail, error) {
 		return Detail{}, err
 	}
 
-	d := Detail{Published: raw.Published, Description: parseDescription(raw.Description)}
+	d := Detail{Published: raw.Published, Description: cleanDescription(parseDescription(raw.Description))}
 	d.Key = workKey
 	d.ID = id
 	d.Title = raw.Title
