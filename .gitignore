@@ -1,0 +1,10 @@
+# Compiled binary
+/book-explorer
+*.exe
+
+# OS / editor
+.DS_Store
+*.log
+
+# Env
+.env

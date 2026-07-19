@@ -1,0 +1,76 @@
+{{define "content"}}
+  {{if .Error}}
+    <div class="message">
+      <div class="message-icon">📕</div>
+      <h2>{{.Error}}</h2>
+      <p><a href="/">← Back to Book Explorer</a></p>
+    </div>
+  {{else}}
+    <a class="back-link" href="/">← Back</a>
+
+    <div class="book-stage">
+      <article class="book">
+        <!-- Left page: cover + title -->
+        <div class="page page-left">
+          <div class="page-inner">
+            <div class="frontispiece">
+              <div class="cover-fallback"><span>{{.Title}}</span></div>
+              {{if .CoverURL "L"}}
+                <img
+                  class="frontispiece-img"
+                  src="{{.CoverURL "L"}}"
+                  alt="{{.Title}} cover"
+                  onerror="this.style.display='none'"
+                />
+              {{end}}
+            </div>
+            <h1 class="book-title">{{.Title}}</h1>
+            <p class="book-author">{{.AuthorLine}}</p>
+            {{if .Published}}<p class="book-published">First published {{.Published}}</p>{{end}}
+          </div>
+        </div>
+
+        <!-- Right page: the summary, written on the page -->
+        <div class="page page-right">
+          <div class="page-inner">
+            <h2 class="page-heading">Summary</h2>
+            {{if .Description}}
+              <p class="book-text" data-typewriter>{{.Description}}</p>
+            {{else}}
+              <p class="book-text muted">No description available for this book.</p>
+            {{end}}
+            {{if .Subjects}}
+              <div class="page-subjects">
+                {{range .Subjects}}<span class="subject-tag">{{.}}</span>{{end}}
+              </div>
+            {{end}}
+            <a
+              class="external-link ink"
+              href="https://openlibrary.org{{.Key}}"
+              target="_blank"
+              rel="noreferrer"
+              >View on Open Library ↗</a
+            >
+          </div>
+        </div>
+
+        <!-- The closed front cover that flips open -->
+        <div class="book-cover" aria-hidden="true">
+          <div class="cover-front">
+            <span class="cover-front-title">{{.Title}}</span>
+            {{if .CoverIDs}}
+              <img
+                class="cover-art"
+                alt=""
+                src="https://covers.openlibrary.org/b/id/{{index .CoverIDs 0}}-L.jpg?default=false"
+                data-fallbacks="{{range .CoverIDs}}{{.}},{{end}}"
+              />
+            {{end}}
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <script src="/static/book.js" defer></script>
+  {{end}}
+{{end}}
