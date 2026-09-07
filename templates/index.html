@@ -10,6 +10,16 @@
       {{if .IsSearch}}
         <h1>Results for “{{.Query}}”</h1>
         <span class="muted">{{.Total}} found</span>
+        <form class="sort-form" method="get" action="/">
+          <input type="hidden" name="q" value="{{.Query}}" />
+          <label for="sort">Sort</label>
+          <select id="sort" name="sort" onchange="this.form.submit()">
+            <option value="" {{if eq .Sort ""}}selected{{end}}>Relevance</option>
+            <option value="new" {{if eq .Sort "new"}}selected{{end}}>Newest</option>
+            <option value="rating" {{if eq .Sort "rating"}}selected{{end}}>Top rated</option>
+            <option value="editions" {{if eq .Sort "editions"}}selected{{end}}>Most editions</option>
+          </select>
+        </form>
       {{else}}
         <h1>📈 Trending today</h1>
         <span class="muted">Popular on Open Library</span>
@@ -19,34 +29,46 @@
     {{if .Books}}
       <div class="book-grid">
         {{range .Books}}
-          <a class="book-card" href="/book/{{.ID}}">
-            <div class="cover">
-              {{if .CoverURL "M"}}
-                <img src="{{.CoverURL "M"}}" alt="{{.Title}} cover" loading="lazy" />
-              {{else}}
-                <div class="cover-fallback"><span>{{.Title}}</span></div>
-              {{end}}
-              {{if .HasRating}}<span class="rating-badge">⭐ {{.RatingStr}}</span>{{end}}
-              {{if .Year}}<span class="year-badge">{{.Year}}</span>{{end}}
-            </div>
-            <div class="card-info">
-              <h3 title="{{.Title}}">{{.Title}}</h3>
-              <span class="author">{{.AuthorLine}}</span>
-            </div>
-          </a>
+          <article class="book-card">
+            <a class="card-link" href="/book/{{.ID}}">
+              <div class="cover">
+                {{if .CoverURL "M"}}
+                  <img src="{{.CoverURL "M"}}" alt="{{.Title}} cover" loading="lazy" />
+                {{else}}
+                  <div class="cover-fallback"><span>{{.Title}}</span></div>
+                {{end}}
+                {{if .HasRating}}<span class="rating-badge">⭐ {{.RatingStr}}</span>{{end}}
+                {{if .Year}}<span class="year-badge">{{.Year}}</span>{{end}}
+              </div>
+              <div class="card-info">
+                <h3 title="{{.Title}}">{{.Title}}</h3>
+                <span class="author">{{.AuthorLine}}</span>
+              </div>
+            </a>
+            {{if .Readable}}
+              <a
+                class="read-badge"
+                href="{{.ReadURL}}"
+                target="_blank"
+                rel="noreferrer"
+                title="Read this book free"
+                >📖 Free</a
+              >
+            {{end}}
+          </article>
         {{end}}
       </div>
 
       {{if .IsSearch}}
         <nav class="pager">
           {{if .HasPrev}}
-            <a class="pager-btn" href="/?q={{.Query}}&page={{.PrevPage}}">← Prev</a>
+            <a class="pager-btn" href="/?q={{.Query}}&sort={{.Sort}}&page={{.PrevPage}}">← Prev</a>
           {{else}}
             <span class="pager-btn disabled">← Prev</span>
           {{end}}
           <span class="page-num">Page {{.Page}}</span>
           {{if .HasNext}}
-            <a class="pager-btn" href="/?q={{.Query}}&page={{.NextPage}}">Next →</a>
+            <a class="pager-btn" href="/?q={{.Query}}&sort={{.Sort}}&page={{.NextPage}}">Next →</a>
           {{else}}
             <span class="pager-btn disabled">Next →</span>
           {{end}}

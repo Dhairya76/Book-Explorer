@@ -26,6 +26,7 @@ var (
 
 type homeData struct {
 	Query    string
+	Sort     string
 	IsSearch bool
 	Books    []openlibrary.Book
 	Total    int
@@ -60,17 +61,29 @@ func main() {
 	}
 }
 
+// validSort whitelists the sort options we expose, so only known values reach
+// the Open Library API.
+func validSort(s string) string {
+	switch s {
+	case "new", "rating", "editions":
+		return s
+	default:
+		return ""
+	}
+}
+
 func handleHome(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	sort := validSort(r.URL.Query().Get("sort"))
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	if page < 1 {
 		page = 1
 	}
 
-	data := homeData{Query: query, IsSearch: query != "", Page: page}
+	data := homeData{Query: query, Sort: sort, IsSearch: query != "", Page: page}
 
 	if query != "" {
-		res, err := openlibrary.Search(r.Context(), query, page)
+		res, err := openlibrary.Search(r.Context(), query, page, sort)
 		if err != nil {
 			data.Error = "Couldn't reach Open Library. Please try again."
 		} else {

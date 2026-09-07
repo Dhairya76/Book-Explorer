@@ -110,6 +110,7 @@ a {
   display: flex;
   align-items: baseline;
   gap: 12px;
+  flex-wrap: wrap;
   margin: 10px 0 22px;
 }
 
@@ -123,6 +124,39 @@ a {
   font-size: 14px;
 }
 
+/* Sort control on the results page */
+.sort-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.sort-form label {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.sort-form select {
+  appearance: none;
+  background-color: var(--bg-elevated);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='%2392a6ad' d='M3 5l3 3 3-3z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 7px 30px 7px 12px;
+}
+
+.sort-form select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 /* ---------- Grid & cards ---------- */
 .book-grid {
   display: grid;
@@ -131,12 +165,11 @@ a {
 }
 
 .book-card {
-  display: block;
+  position: relative;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  color: var(--text);
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -144,6 +177,32 @@ a {
   transform: translateY(-6px);
   background: var(--card-hover);
   box-shadow: var(--shadow);
+}
+
+.card-link {
+  display: block;
+  color: var(--text);
+}
+
+/* Actionable "read free" badge — a sibling of the card link, on top of it */
+.read-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  background: var(--accent);
+  color: #06231f;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.read-badge:hover {
+  transform: scale(1.06);
+  background: var(--accent-strong);
 }
 
 .cover {
@@ -234,7 +293,7 @@ a {
   margin-top: 34px;
 }
 
-.pager a {
+.pager-btn {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   color: var(--text);
@@ -244,9 +303,13 @@ a {
   font-size: 14px;
 }
 
-.pager a:hover {
+a.pager-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.pager-btn.disabled {
+  opacity: 0.4;
 }
 
 .page-num {

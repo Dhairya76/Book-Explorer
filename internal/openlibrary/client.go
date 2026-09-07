@@ -49,14 +49,16 @@ var httpClient = &http.Client{Timeout: 10 * time.Second}
 
 // Book is a lightweight view of a work used across the app.
 type Book struct {
-	Key      string // e.g. "/works/OL893415W"
-	ID       string // e.g. "OL893415W"
-	Title    string
-	Authors  []string
-	Year     int
-	CoverID  int
-	Editions int
-	Rating   float64
+	Key         string // e.g. "/works/OL893415W"
+	ID          string // e.g. "OL893415W"
+	Title       string
+	Authors     []string
+	Year        int
+	CoverID     int
+	Editions    int
+	Rating      float64
+	EbookAccess string // "public", "borrowable", "printdisabled", "no_ebook"
+	IA          string // first Internet Archive id, if any
 }
 
 // CoverURL returns a cover image URL for the given size ("S", "M", "L"),
@@ -80,8 +82,20 @@ func (b Book) AuthorLine() string {
 	}
 }
 
-func (b Book) HasRating() bool  { return b.Rating > 0 }
+func (b Book) HasRating() bool   { return b.Rating > 0 }
 func (b Book) RatingStr() string { return fmt.Sprintf("%.1f", b.Rating) }
+
+// Readable reports whether the book is a fully public-domain title that can be
+// read for free (as opposed to "borrowable", which needs an account).
+func (b Book) Readable() bool { return b.EbookAccess == "public" }
+
+// ReadURL returns where to read the book for free.
+func (b Book) ReadURL() string {
+	if b.IA != "" {
+		return "https://archive.org/details/" + b.IA
+	}
+	return baseURL + b.Key
+}
 
 // Detail is a Book plus the fields we can only get from the work endpoint.
 type Detail struct {
@@ -101,19 +115,26 @@ type doc struct {
 	CoverI         int      `json:"cover_i"`
 	EditionCount   int      `json:"edition_count"`
 	RatingsAverage float64  `json:"ratings_average"`
+	EbookAccess    string   `json:"ebook_access"`
+	IA             []string `json:"ia"`
 }
 
 func (d doc) toBook() Book {
-	return Book{
-		Key:      d.Key,
-		ID:       strings.TrimPrefix(d.Key, "/works/"),
-		Title:    d.Title,
-		Authors:  d.AuthorName,
-		Year:     d.FirstPublish,
-		CoverID:  d.CoverI,
-		Editions: d.EditionCount,
-		Rating:   d.RatingsAverage,
+	b := Book{
+		Key:         d.Key,
+		ID:          strings.TrimPrefix(d.Key, "/works/"),
+		Title:       d.Title,
+		Authors:     d.AuthorName,
+		Year:        d.FirstPublish,
+		CoverID:     d.CoverI,
+		Editions:    d.EditionCount,
+		Rating:      d.RatingsAverage,
+		EbookAccess: d.EbookAccess,
 	}
+	if len(d.IA) > 0 {
+		b.IA = d.IA[0]
+	}
+	return b
 }
 
 // SearchResult is a page of search results.
@@ -143,8 +164,9 @@ func getJSON(ctx context.Context, u string, out any) error {
 	return json.NewDecoder(resp.Body).Decode(out)
 }
 
-// Search queries Open Library for books matching query.
-func Search(ctx context.Context, query string, page int) (SearchResult, error) {
+// Search queries Open Library for books matching query. sort may be "" (relevance)
+// or one of the Open Library sort keys ("new", "rating", "editions").
+func Search(ctx context.Context, query string, page int, sort string) (SearchResult, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -152,7 +174,10 @@ func Search(ctx context.Context, query string, page int) (SearchResult, error) {
 	q.Set("q", query)
 	q.Set("page", strconv.Itoa(page))
 	q.Set("limit", strconv.Itoa(PageSize))
-	q.Set("fields", "key,title,author_name,first_publish_year,cover_i,edition_count,ratings_average")
+	q.Set("fields", "key,title,author_name,first_publish_year,cover_i,edition_count,ratings_average,ebook_access,ia")
+	if sort != "" {
+		q.Set("sort", sort)
+	}
 
 	var body struct {
 		NumFound int   `json:"numFound"`
