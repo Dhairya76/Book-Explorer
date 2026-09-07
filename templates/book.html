@@ -71,6 +71,26 @@
       </article>
     </div>
 
+    {{if .MoreByAuthor}}
+      <section class="more-by">
+        <h2 class="more-by-title">More by {{.MoreByAuthorName}}</h2>
+        <div class="more-grid">
+          {{range .MoreByAuthor}}
+            <a class="more-card" href="/book/{{.ID}}">
+              <div class="more-cover">
+                {{if .CoverURL "M"}}
+                  <img src="{{.CoverURL "M"}}" alt="{{.Title}} cover" loading="lazy" />
+                {{else}}
+                  <div class="cover-fallback"><span>{{.Title}}</span></div>
+                {{end}}
+              </div>
+              <span class="more-card-title" title="{{.Title}}">{{.Title}}</span>
+            </a>
+          {{end}}
+        </div>
+      </section>
+    {{end}}
+
     <script src="/static/book.js" defer></script>
   {{end}}
 {{end}}

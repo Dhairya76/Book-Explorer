@@ -100,10 +100,12 @@ func (b Book) ReadURL() string {
 // Detail is a Book plus the fields we can only get from the work endpoint.
 type Detail struct {
 	Book
-	Description string
-	Subjects    []string
-	Published   string
-	CoverIDs    []int // all cover IDs, so the client can fall back if one fails
+	Description       string
+	Subjects         []string
+	Published        string
+	CoverIDs         []int // all cover IDs, so the client can fall back if one fails
+	MoreByAuthor     []Book
+	MoreByAuthorName string
 }
 
 // doc matches the shape of a search/trending result item.
@@ -215,22 +217,34 @@ func Trending(ctx context.Context) ([]Book, error) {
 
 // Work fetches the detail record for a single work (id like "OL893415W").
 func Work(ctx context.Context, id string) (Detail, error) {
-	workKey := "/works/" + id
-
-	var raw struct {
+	type rawWork struct {
 		Title       string          `json:"title"`
 		Description json.RawMessage `json:"description"`
 		Subjects    []string        `json:"subjects"`
 		Covers      []int           `json:"covers"`
 		Published   string          `json:"first_publish_date"`
+		Location    string          `json:"location"` // set when the work was merged/redirected
 		Authors     []struct {
 			Author struct {
 				Key string `json:"key"`
 			} `json:"author"`
 		} `json:"authors"`
 	}
+
+	workKey := "/works/" + id
+	var raw rawWork
 	if err := getJSON(ctx, baseURL+workKey+".json", &raw); err != nil {
 		return Detail{}, err
+	}
+
+	// Merged works return a redirect stub with a "location" — follow it once.
+	if strings.HasPrefix(raw.Location, "/works/") {
+		id = strings.TrimPrefix(raw.Location, "/works/")
+		workKey = "/works/" + id
+		raw = rawWork{}
+		if err := getJSON(ctx, baseURL+workKey+".json", &raw); err != nil {
+			return Detail{}, err
+		}
 	}
 
 	d := Detail{Published: raw.Published, Description: cleanDescription(parseDescription(raw.Description))}
@@ -248,16 +262,63 @@ func Work(ctx context.Context, id string) (Detail, error) {
 	}
 
 	// Resolve up to three author names (each is a separate reference).
+	var moreByKey string
 	for i, a := range raw.Authors {
 		if i >= 3 {
 			break
 		}
 		if name := authorName(ctx, a.Author.Key); name != "" {
 			d.Authors = append(d.Authors, name)
+			if moreByKey == "" {
+				moreByKey = a.Author.Key
+			}
 		}
 	}
 
+	// Other works by the primary author, for the "More by this author" row.
+	if moreByKey != "" {
+		d.MoreByAuthor = authorWorks(ctx, moreByKey, id, 6)
+		d.MoreByAuthorName = d.Authors[0]
+	}
+
 	return d, nil
+}
+
+// authorWorks returns other works by an author (key like "/authors/OL34184A"),
+// excluding the work with excludeID, up to limit results.
+func authorWorks(ctx context.Context, authorKey, excludeID string, limit int) []Book {
+	if authorKey == "" {
+		return nil
+	}
+	var body struct {
+		Entries []struct {
+			Key    string `json:"key"`
+			Title  string `json:"title"`
+			Covers []int  `json:"covers"`
+		} `json:"entries"`
+	}
+	// Fetch a few extra so we can drop the current work and still fill the row.
+	u := baseURL + authorKey + "/works.json?limit=" + strconv.Itoa(limit+4)
+	if err := getJSON(ctx, u, &body); err != nil {
+		return nil
+	}
+
+	books := make([]Book, 0, limit)
+	for _, e := range body.Entries {
+		id := strings.TrimPrefix(e.Key, "/works/")
+		if id == excludeID || e.Title == "" {
+			continue
+		}
+		b := Book{Key: e.Key, ID: id, Title: e.Title}
+		if len(e.Covers) > 0 && e.Covers[0] > 0 {
+			b.CoverID = e.Covers[0]
+		}
+		books = append(books, b)
+		if len(books) >= limit {
+			break
+		}
+	}
+	return books
 }
 
 // Open Library's "description" is sometimes a plain string and sometimes an

@@ -541,6 +541,59 @@ a.pager-btn:hover {
   color: #9a3b1f;
 }
 
+/* ---------- "More by this author" ---------- */
+.more-by {
+  max-width: 920px;
+  margin: 44px auto 0;
+}
+
+.more-by-title {
+  margin: 0 0 18px;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.more-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 18px;
+}
+
+.more-card {
+  display: block;
+  color: var(--text);
+}
+
+.more-cover {
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0b1013;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease;
+}
+
+.more-card:hover .more-cover {
+  transform: translateY(-5px);
+}
+
+.more-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.more-card-title {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ---------- The front cover that flips open ---------- */
 .book-cover {
   position: absolute;
